@@ -5,7 +5,6 @@
 package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotBase;
@@ -16,8 +15,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.subsystems.IntakeSubsystem;
-import frc.robot.subsystems.PivotSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 import java.io.File;
 
@@ -28,20 +25,19 @@ import java.io.File;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
-
   private final SendableChooser<Command> autoChooser;
   // Replace with CommandPS4Controller or CommandJoystick if needed
-  final CommandXboxController driverXbox =
-      new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
+  final CommandXboxController driverXbox = new CommandXboxController(0);
+  final CommandXboxController codriverXbox = new CommandXboxController(1);
   // The robot's subsystems and commands are defined here...
   private final SwerveSubsystem drivebase =
       new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"));
-  private final IntakeSubsystem intake = new IntakeSubsystem();
 
-  private final PivotSubsystem pivot = new PivotSubsystem();
-  // Applies deadbands and inverts controls because joysticks are back-right positive while robot
-  // controls are front-left positive left stick controls translation right stick controls the
-  // angular velocity of the robot
+  // Applies deadbands and inverts controls because joysticks
+  // are back-right positive while robot
+  // controls are front-left positive
+  // left stick controls translation
+  // right stick controls the angular velocity of the robot
   Command driveFieldOrientedAnglularVelocity =
       drivebase.driveCommand(
           () -> MathUtil.applyDeadband(-driverXbox.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
@@ -54,26 +50,18 @@ public class RobotContainer {
           () -> MathUtil.applyDeadband(driverXbox.getLeftX(), OperatorConstants.LEFT_X_DEADBAND),
           () -> driverXbox.getRawAxis(2));
 
-  Command driveFieldOrientedAnglularVelocityPrecision =
-      drivebase.driveCommand(
-          () ->
-              MathUtil.applyDeadband(
-                  -driverXbox.getLeftY() * 0.5, OperatorConstants.LEFT_Y_DEADBAND),
-          () ->
-              MathUtil.applyDeadband(
-                  -driverXbox.getLeftX() * 0.5, OperatorConstants.LEFT_X_DEADBAND),
-          () -> driverXbox.getRightX() * -1 * 0.5);
-
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
-    NamedCommands.registerCommand("Pivot Up", pivot.pivotUp());
-    NamedCommands.registerCommand("Pivot Down", pivot.pivotDown());
-    NamedCommands.registerCommand("Intake", intake.intakeBucket());
-    NamedCommands.registerCommand("Outtake", intake.outtakeBucket());
     // Configure the trigger bindings
     configureBindings();
+
+    // Build an auto chooser. This will use Commands.none() as the default option.
     autoChooser = AutoBuilder.buildAutoChooser();
-    SmartDashboard.putData(autoChooser);
+
+    // Another option that allows you to specify the default auto by its name
+    // autoChooser = AutoBuilder.buildAutoChooser("My Default Auto");
+
+    SmartDashboard.putData("Auto Chooser", autoChooser);
   }
 
   /**
@@ -86,15 +74,24 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    driverXbox.a().onTrue(pivot.pivotDown());
-    driverXbox.x().onTrue(pivot.pivotUp());
+    driverXbox.a().onTrue(Commands.none());
+    driverXbox.x().onTrue(Commands.none());
     driverXbox.b().onTrue(Commands.none());
+    driverXbox.y().onTrue(Commands.none());
     driverXbox.start().onTrue(Commands.runOnce(drivebase::zeroGyro));
-    driverXbox.back().whileTrue(Commands.none());
-    driverXbox.leftBumper().whileTrue(Commands.none());
-    driverXbox.leftTrigger().whileTrue(intake.intakeBucket());
-    driverXbox.rightTrigger().whileTrue(intake.outtakeBucket());
-    driverXbox.rightBumper().whileTrue(driveFieldOrientedAnglularVelocityPrecision);
+    driverXbox.back().onTrue(Commands.none());
+    driverXbox.leftBumper().onTrue(Commands.none());
+    driverXbox.rightBumper().onTrue(Commands.none());
+
+    codriverXbox.a().onTrue(Commands.none());
+    codriverXbox.x().onTrue(Commands.none());
+    codriverXbox.b().onTrue(Commands.none());
+    codriverXbox.y().onTrue(Commands.none());
+    codriverXbox.start().onTrue(Commands.none());
+    codriverXbox.back().onTrue(Commands.none());
+    codriverXbox.leftBumper().onTrue(Commands.none());
+    codriverXbox.rightBumper().onTrue(Commands.none());
+
     drivebase.setDefaultCommand(
         !RobotBase.isSimulation()
             ? driveFieldOrientedAnglularVelocity
@@ -108,10 +105,6 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     return autoChooser.getSelected();
-  }
-
-  public double getPivotEncoder() {
-    return pivot.getMeasurement();
   }
 
   public void setDriveMode() {

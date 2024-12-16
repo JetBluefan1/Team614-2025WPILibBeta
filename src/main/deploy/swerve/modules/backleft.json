@@ -5,12 +5,16 @@
   },
   "absoluteEncoderOffset": 11,
   "drive": {
-    "type": "sparkflex",
+    "type": "sparkflex_vortex",
     "id": 15,
-    "canbus": null 
+    "canbus": null
+  },
+  "inverted": {
+    "drive": true,
+    "angle": false
   },
   "angle": {
-    "type": "sparkflex",
+    "type": "sparkflex_vortex",
     "id": 16,
     "canbus": null
   },
@@ -18,10 +22,6 @@
     "type": "thrifty",
     "id": 2,
     "canbus": null
-  },
-  "inverted": {
-    "drive": true,
-    "angle": false
   },
   "absoluteEncoderInverted": false
 }
